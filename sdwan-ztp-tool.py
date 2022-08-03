@@ -5,12 +5,7 @@ from tkinter import filedialog
 from tkinter import *
 from tkinter import *
 from openpyxl import load_workbook
-import json
-import requests
-import ipaddress
-import sys
-import platform
-import io
+import json, requests, ipaddress, sys, platform, io
 
 requests.packages.urllib3.disable_warnings()
 
@@ -18,10 +13,13 @@ requests.packages.urllib3.disable_warnings()
 #   *Default allowed_extensions are: ['.js', '.html', '.txt', '.htm', '.xhtml']
 eel.init('web', allowed_extensions=['.js', '.html'])
 
+
 def sendupdate(return_html):
     eel.pageupdate(return_html)
 
+
 ### Export ADOM Functions
+
 def export_adom(adomname):
     global export_info
     global sdwan_template_list
