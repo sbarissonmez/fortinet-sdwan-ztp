@@ -163,3 +163,36 @@ def get_and_add(std_objects, objecturls):
         if objecturls == "addrobjs":
             if newdata[index]['name'] in ignore_addr_obj:
                 newdata[index] = {}
+
+        ignore_addrgrp_obj = ["G Suite", "Microsoft Office 365"]
+        if objecturls == "addrobjs_grp":
+            if newdata[index]['name'] in ignore_addrgrp_obj:
+                newdata[index] = {}
+
+        ignore_sdwan_hlth = ["Default_AWS", "Default_FortiGuard", "Default_Gmail", "Default_Google Search",
+                             "Default_Office_365"]
+        if objecturls == "sdwan_hlth":
+            if newdata[index]['name'] in ignore_sdwan_hlth:
+                newdata[index] = {}
+
+        if objecturls == "sdwantemplates":
+            sdwan_template_list.append(newdata[index]['name'])
+
+        if objecturls == "polpkg":
+            polpkg_list.append(newdata[index]['name'])
+
+        if objecturls == "sdwan_service":
+            if isinstance(newdata[index]['sla'], list):
+                for index2, config2 in enumerate(newdata[index]['sla']):
+                    if "obj seq" in newdata[index]['sla'][index2].keys():
+                        newdata[index]['sla'][index2].pop("obj seq")
+
+        ignore_applist_obj = ["block-high-risk","default", "sniffer-profile", "wifi-default"]
+        if objecturls == "applist":
+            if isinstance(newdata[index]['entries'], list):
+                for index2, config2 in enumerate(newdata[index]['entries']):
+                    if "obj seq" in newdata[index]['entries'][index2].keys():
+                        newdata[index]['entries'][index2].pop("obj seq")
+
+            if newdata[index]['name'] in ignore_applist_obj:
+                newdata[index] = {}
