@@ -130,3 +130,36 @@ def export_adom(adomname):
 
     # print(json.dumps(export_info, indent=4, sort_keys=True))
     return json.dumps(export_info, indent=4, sort_keys=True)
+
+
+def get_and_add(std_objects, objecturls):
+    newdict = {"url": std_objects[objecturls][0], "method": "add", "data": []}
+    if objecturls == "sdw_members":
+        newdict = {"url": std_objects[objecturls][0], "method": "replace", "data": []}
+    jsondata = {
+        "method": "get",
+        "params": [
+            {
+                "url": std_objects[objecturls][1]
+            }
+
+        ],
+        "id": requestid,
+        "session": fmg_sessionid
+    }
+    res = session.post(fmgurl, json=jsondata, verify=False)
+    parsed = json.loads(res.text)
+    # print(json.dumps(parsed, indent=4, sort_keys=True))
+
+    newdata = parsed['result'][0]['data']
+    for index, config in enumerate(newdata):
+        for popitem in std_objects[objecturls][2]:
+            if popitem in newdata[index].keys():
+                newdata[index].pop(popitem)
+
+        ignore_addr_obj = ["wildcard.dropbox.com", "wildcard.google.com", "SSLVPN_TUNNEL_ADDR1", "all", "gmail.com",
+                           "login.microsoft.com", "login.microsoftonline.com", "login.windows.net", "none",
+                           "FABRIC_DEVICE", "FIREWALL_AUTH_PORTAL_ADDRESS"]
+        if objecturls == "addrobjs":
+            if newdata[index]['name'] in ignore_addr_obj:
+                newdata[index] = {}
