@@ -108,24 +108,18 @@ def export_adom(adomname):
     ## Get SDWAN Template Details
     for sdwan_template in sdwan_template_list:
         get_and_add({"sdwan_member": [
-            "pm/config/adom/$(adom_name)/wanprof/" +
-            sdwan_template + "/system/virtual-wan-link/member",
-            "pm/config/adom/" + adomname + "/wanprof/" +
-            sdwan_template + "/system/virtual-wan-link/member",
+            "pm/config/adom/$(adom_name)/wanprof/" + sdwan_template + "/system/virtual-wan-link/member",
+            "pm/config/adom/" + adomname + "/wanprof/" + sdwan_template + "/system/virtual-wan-link/member",
             ["obj seq"]]}, "sdwan_member")
 
         get_and_add({"sdwan_hlth": [
-            "pm/config/adom/$(adom_name)/wanprof/" + sdwan_template +
-            "/system/virtual-wan-link/health-check",
-            "pm/config/adom/" + adomname + "/wanprof/" +
-            sdwan_template + "/system/virtual-wan-link/health-check",
+            "pm/config/adom/$(adom_name)/wanprof/" + sdwan_template + "/system/virtual-wan-link/health-check",
+            "pm/config/adom/" + adomname + "/wanprof/" + sdwan_template + "/system/virtual-wan-link/health-check",
             ["obj seq"]]}, "sdwan_hlth")
 
         get_and_add({"sdwan_service": [
-            "pm/config/adom/$(adom_name)/wanprof/" +
-            sdwan_template + "/system/virtual-wan-link/service",
-            "pm/config/adom/" + adomname + "/wanprof/" +
-            sdwan_template + "/system/virtual-wan-link/service",
+            "pm/config/adom/$(adom_name)/wanprof/" + sdwan_template + "/system/virtual-wan-link/service",
+            "pm/config/adom/" + adomname + "/wanprof/" + sdwan_template + "/system/virtual-wan-link/service",
             ["obj seq"]]}, "sdwan_service")
 
     ## Get Policy Package Details
