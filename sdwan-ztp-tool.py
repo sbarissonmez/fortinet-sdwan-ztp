@@ -279,43 +279,35 @@ def openbook(filename):
                             if ws.cell(row=row, column=col).value is None:
                                 newdict[i] = ""
                             else:
-                                newdict[i] = str(
-                                    ws.cell(row=row, column=col).value)
+                                newdict[i] = str(ws.cell(row=row, column=col).value)
                             if i == "Device_Name":
                                 device_meta_data[newdict['Device_Name']] = {}
-                                device_meta_data[newdict['Device_Name']
-                                                 ]['Device_Name'] = newdict['Device_Name']
+                                device_meta_data[newdict['Device_Name']]['Device_Name'] = newdict['Device_Name']
                                 device_dint_data[newdict['Device_Name']] = {}
-                                device_sdwanint_data[newdict['Device_Name']] = {
-                                }
+                                device_sdwanint_data[newdict['Device_Name']] = {}
                                 device_daddr_data[newdict['Device_Name']] = {}
                                 device_vpn_data[newdict['Device_Name']] = {}
                                 device_daddr6_data[newdict['Device_Name']] = {}
                             if i == "Device_SN":
-                                device_meta_data[newdict['Device_Name']
-                                                 ]['Device_SN'] = newdict['Device_SN']
+                                device_meta_data[newdict['Device_Name']]['Device_SN'] = newdict['Device_SN']
                             if i[0:5] == "meta_":
                                 if ws.cell(row=row, column=col).value is None:
-                                    device_meta_data[newdict['Device_Name']
-                                                     ][i[5:]] = ""
+                                    device_meta_data[newdict['Device_Name']][i[5:]] = ""
                                 else:
                                     device_meta_data[newdict['Device_Name']][i[5:]] = str(
                                         ws.cell(row=row, column=col).value)
                             if i[0:5] == "dint_":
                                 if ws.cell(row=row, column=col).value is None:
-                                    device_dint_data[newdict['Device_Name']
-                                                     ][i[5:]] = ""
+                                    device_dint_data[newdict['Device_Name']][i[5:]] = ""
                                 else:
                                     device_dint_data[newdict['Device_Name']][i[5:]] = str(
                                         ws.cell(row=row, column=col).value).split(",")
                             if i[0:9] == "sdwanint_":
                                 sdwanintsettings = i[9:].split("|")
                                 try:
-                                    device_sdwanint_data[newdict['Device_Name']
-                                                         ][sdwanintsettings[0]]
+                                    device_sdwanint_data[newdict['Device_Name']][sdwanintsettings[0]]
                                 except:
-                                    device_sdwanint_data[newdict['Device_Name']][sdwanintsettings[0]] = {
-                                    }
+                                    device_sdwanint_data[newdict['Device_Name']][sdwanintsettings[0]] = {}
                                 if ws.cell(row=row, column=col).value is not None:
                                     device_sdwanint_data[newdict['Device_Name']][sdwanintsettings[0]][
                                         sdwanintsettings[1]] = str(ws.cell(row=row, column=col).value)
