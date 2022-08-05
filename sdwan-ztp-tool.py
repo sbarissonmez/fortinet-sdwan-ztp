@@ -314,22 +314,19 @@ def openbook(filename):
 
                             if i[0:6] == "daddr_":
                                 if ws.cell(row=row, column=col).value is None:
-                                    device_daddr_data[newdict['Device_Name']
-                                                      ][i[6:]] = ""
+                                    device_daddr_data[newdict['Device_Name']][i[6:]] = ""
                                 else:
                                     device_daddr_data[newdict['Device_Name']][i[6:]] = str(
                                         ws.cell(row=row, column=col).value)
                             if i[0:7] == "daddr6_":
                                 if ws.cell(row=row, column=col).value is None:
-                                    device_daddr6_data[newdict['Device_Name']
-                                                       ][i[7:]] = ""
+                                    device_daddr6_data[newdict['Device_Name']][i[7:]] = ""
                                 else:
                                     device_daddr6_data[newdict['Device_Name']][i[7:]] = str(
                                         ws.cell(row=row, column=col).value)
                             if i[0:6] == "vpn_OL":
                                 if ws.cell(row=row, column=col).value is None:
-                                    device_vpn_data[newdict['Device_Name']
-                                                    ][i[4:]] = ""
+                                    device_vpn_data[newdict['Device_Name']][i[4:]] = ""
                                 else:
                                     device_vpn_data[newdict['Device_Name']][i[4:]] = str(
                                         ws.cell(row=row, column=col).value)
