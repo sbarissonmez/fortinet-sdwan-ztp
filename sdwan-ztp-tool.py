@@ -1364,3 +1364,76 @@ def add_vpn_hub(adom, overlayname, interface, authpasswd, devicename, vdom, oNet
     # print(json.dumps(jsondata, indent=4, sort_keys=True))
     status_addvpnhub = json_addvpnhub['result'][0]['status']['message']
     return status_addvpnhub
+
+
+def add_vpn_branch(adom, overlayname, interface, authpasswd, devicename, vdom):
+    # Adds a node to an Existing VPN community in FortiManager
+
+    # need to add Check Overlay Exists/Check Community Exists?
+    # @Darryl
+    # Enhancement - Need to update Exiting Overlay\Node ID number, otherwise use a new ID.
+    # Note - this currently uses ID 0 - which means next available ID number - if this imports twice you will get two entries
+
+    requestid = 1
+    jsondata = {
+        "method": "set",
+        "params": [
+            {
+                "url": "pm/config/adom/" + adom + "/obj/vpnmgr/node",
+                "data": [
+                    {
+                        "protected_subnet": {
+                            "addr": "all",
+                            "seq": 1
+                        },
+                        "scope member": {
+                            "name": devicename,
+                            "vdom": "root"
+                        },
+                        "vpntable": overlayname,
+                        "role": 1,
+                        "usrgrp": [],
+                        "iface": interface,
+                        "automatic_routing": 0,
+                        "extgwip": [],
+                        "extgw_hubip": [],
+                        "extgw_p2_per_net": 0,
+                        "route-overlap": 0,
+                        "vpn-zone": [],
+                        "spoke-zone": [],
+                        "vpn-interface-priority": 0,
+                        "auto-configuration": 1,
+                        "ipsec-lease-hold": 60,
+                        "add-route": 0,
+                        "assign-ip": 0,
+                        "assign-ip-from": 0,
+                        "exchange-interface-ip": 1,
+                        "mode-cfg": 1,
+                        "mode-cfg-ip-version": 0,
+                        "net-device": 1,
+                        "peergrp": [],
+                        "peertype": 8,
+                        "tunnel-search": 0,
+                        "unity-support": 1,
+                        "xauthtype": 1
+                    }
+                ]
+            }
+
+        ],
+        "id": requestid,
+        "session": fmg_sessionid
+    }
+    res = session.post(fmgurl, json=jsondata, verify=False)
+    print("### add_vpn_branch")
+    json_addvpnnode = json.loads(res.text)
+    # print(json.dumps(jsondata, indent=4, sort_keys=True))
+    status_addvpnnode = json_addvpnnode['result'][0]['status']['message']
+    return status_addvpnnode
+
+
+##====================================================================================
+##====================================================================================
+##====================================================================================
+##====================================================================================
+##====================================================================================
