@@ -437,6 +437,8 @@ def workspace_commit(adom):
     print("Response:")
     print(json.dumps(response, indent=4, sort_keys=True))
 
+
+
     jsondata = {
         "method": "exec",
         "params": [
@@ -1284,3 +1286,81 @@ def add_vpn_overlay(adom, overlayname, authpasswd):
     json_add_vpn_overlay = json.loads(res.text)
     status_add_vpn_overlay = json_add_vpn_overlay['result'][0]['status']['message']
     return status_add_vpn_overlay
+
+
+def add_vpn_hub(adom, overlayname, interface, authpasswd, devicename, vdom, oNetwork):
+    # Adds a hub to an Existing VPN community in FortiManager
+
+    # need to add Check Overlay Exists/Check Community Exists?
+    # @Darryl
+    # Enhancement - Need to update Exiting Overlay\Node ID number, otherwise use a new ID.
+    # Note - this currently uses ID 0 - which means next available ID number - if this imports twice you will get two entries
+
+    oTemp = ipaddress.ip_network(oNetwork, strict=False)
+
+    requestid = 1
+    jsondata = {
+        "method": "set",
+        "params": [
+            {
+                "url": "pm/config/adom/" + adom + "/obj/vpnmgr/node",
+                "data": [
+                    {
+                        "id": 0,
+                        "protected_subnet": {
+                            "addr": "all",
+                            "seq": 1
+                        },
+                        "scope member": {
+                            "name": devicename,
+                            "vdom": "root"
+                        },
+                        "vpntable": overlayname,
+                        "role": 0,
+                        "iface": interface,
+                        "hub_iface": [],
+                        "peer": [],
+                        "automatic_routing": 0,
+                        "mode-cfg": 1,
+                        "mode-cfg-ip-version": 0,
+                        "ipv4-start-ip": str(oTemp[10]),
+                        "ipv4-end-ip": str(oTemp[-1]),
+                        "ipv4-netmask": str(oTemp.netmask),
+                        "net-device": 0,
+                        "tunnel-search": 1,
+                        "extgwip": [],
+                        "extgw_hubip": [],
+                        "extgw_p2_per_net": 0,
+                        "route-overlap": 0,
+                        "vpn-zone": [],
+                        "spoke-zone": [],
+                        "vpn-interface-priority": 0,
+                        "auto-configuration": 1,
+                        "dns-service": 5,
+                        # "dhcp-server": 1,
+                        "ipsec-lease-hold": 60,
+                        "add-route": 0,
+                        "assign-ip": 1,
+                        "assign-ip-from": 0,
+                        "authusrgrp": [],
+                        "dns-mode": 1,
+                        "exchange-interface-ip": 0,
+                        # "exchange-interface-ip": 0,
+                        "peergrp": [],
+                        "peertype": 1,
+                        "unity-support": 1,
+                        "xauthtype": 1
+                    }
+                ]
+            }
+
+        ],
+        "id": requestid,
+        "session": fmg_sessionid
+    }
+    res = session.post(fmgurl, json=jsondata, verify=False)
+    print("### add_vpn_hub ")
+    json_addvpnhub = json.loads(res.text)
+    # print(json.dumps(jsondata, indent=4, sort_keys=True))
+    status_addvpnhub = json_addvpnhub['result'][0]['status']['message']
+    return status_addvpnhub
