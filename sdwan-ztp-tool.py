@@ -1656,6 +1656,7 @@ def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
                         else:
                             return_html += "Assign Certificate Template failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
 
+
                 ### Add meta data to device
                 print("   ### Add meta data to device")
                 update_device(fmg_adom, devicedata['Device_Name'])
@@ -1682,17 +1683,16 @@ def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
                     if workspacemode == 1:
                         workspace_commit(fmg_adom)
 
+
                     ##Install Device Settings
-                    qi_status = track_quickinstall(quickinstall(
-                        fmg_adom, devicedata['Device_Name'], 'root'))
+                    qi_status = track_quickinstall(quickinstall(fmg_adom, devicedata['Device_Name'], 'root'))
                     if qi_status:
                         return_html += "Quick install device settings successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
                     else:
                         return_html += "Quick install device settings failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
 
                     ##Unassign CLI Template
-                    unassign_cli_template(
-                        fmg_adom, devicedata['CLI_Template'], devicedata['Device_Name'])
+                    unassign_cli_template(fmg_adom, devicedata['CLI_Template'], devicedata['Device_Name'])
 
                     if workspacemode == 1:
                         workspace_commit(fmg_adom)
@@ -1705,54 +1705,44 @@ def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
 
                 for key in device_dint_data[devicedata['Device_Name']]:
                     if device_dint_data[devicedata['Device_Name']][key] == "":
-                        return_html += "Add dynamic map for interface \"" + key + \
-                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                        return_html += "Add dynamic map for interface \"" + key + "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
                     else:
                         status_mapdint = add_policy_interface_member(fmg_adom, key,
                                                                      device_dint_data[devicedata['Device_Name']][key],
                                                                      devicedata['Device_Name'])
 
                         if status_mapdint == "OK":
-                            return_html += "Add dynamic map for interface \"" + key + \
-                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                            return_html += "Add dynamic map for interface \"" + key + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
                         else:
-                            return_html += "Add dynamic map for interface \"" + key + \
-                                "\" failed ><span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += "Add dynamic map for interface \"" + key + "\" failed ><span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
                             return_html += status_mapdint + "<br>\n"
 
                 ### MAP DYNAMIC ADDRESS OJBECTS
                 ## ipv4
                 for key in device_daddr_data[devicedata['Device_Name']]:
                     if device_daddr_data[devicedata['Device_Name']][key] == "":
-                        return_html += "Add dynamic map for address \"" + key + \
-                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                        return_html += "Add dynamic map for address \"" + key + "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
                     else:
                         status_mapdaddr = add_daddr(fmg_adom, key, device_daddr_data[devicedata['Device_Name']][key],
                                                     devicedata['Device_Name'], 'root')
                         if status_mapdaddr == "OK":
-                            return_html += "Add dynamic map for address \"" + key + \
-                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                            return_html += "Add dynamic map for address \"" + key + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
                         else:
-                            return_html += "Add dynamic map for address \"" + key + \
-                                "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += "Add dynamic map for address \"" + key + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
                             return_html += status_mapdaddr + "<br>\n"
 
                 ### Add Branch to Central VPN Manager (Darryl)
 
-                # e.g. key = vpn_OL_INET, vpn_OL_MPLS, ishub
-                for key in device_vpn_data[devicedata['Device_Name']]:
+                for key in device_vpn_data[devicedata['Device_Name']]:  # e.g. key = vpn_OL_INET, vpn_OL_MPLS, ishub
                     if device_vpn_data[devicedata['Device_Name']][key] == "":
-                        return_html += "Add vpn node for device \"" + key + \
-                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                        return_html += "Add vpn node for device \"" + key + "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
                     else:
                         # key = the overlay name
                         add_vpn_overlay(fmg_adom, key, "")
 
-                        print("     Is this device a vpn hub: " +
-                              devicedata['vpn_IsHub'] + " / Overlayname: " + key)
+                        print("     Is this device a vpn hub: " + devicedata['vpn_IsHub'] + " / Overlayname: " + key)
                         if devicedata['vpn_IsHub'] in ["true", "yes", "hub", "1"]:
-                            print('    vpn_Subnet_' + key + "=" +
-                                  devicedata['vpn_Subnet_' + key])
+                            print('    vpn_Subnet_' + key + "=" + devicedata['vpn_Subnet_' + key])
                             status_mapvpnnode = add_vpn_hub(fmg_adom, key,
                                                             device_vpn_data[devicedata['Device_Name']][key],
                                                             "", devicedata['Device_Name'], fmg_adom,
@@ -1763,42 +1753,33 @@ def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
                                                                "", devicedata['Device_Name'], fmg_adom)
 
                         if status_mapvpnnode == "OK":
-                            return_html += "Add vpnnode map for device \"" + key + \
-                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                            return_html += "Add vpnnode map for device \"" + key + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
                         else:
-                            return_html += "Add vpnnode map for device \"" + key + \
-                                "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += "Add vpnnode map for device \"" + key + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
                             return_html += status_mapdaddr + "<br>\n"
 
                 ## ipv6
                 for key in device_daddr6_data[devicedata['Device_Name']]:
                     if device_daddr6_data[devicedata['Device_Name']][key] == "":
-                        return_html += "Add dynamic map for address6 \"" + key + \
-                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                        return_html += "Add dynamic map for address6 \"" + key + "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
                     else:
                         status_mapdaddr6 = add_daddr6(fmg_adom, key, device_daddr6_data[devicedata['Device_Name']][key],
                                                       devicedata['Device_Name'], 'root')
                         if status_mapdaddr6 == "OK":
-                            return_html += "Add dynamic map for address6 \"" + key + \
-                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                            return_html += "Add dynamic map for address6 \"" + key + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
                         else:
-                            return_html += "Add dynamic map for address6 \"" + key + \
-                                "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += "Add dynamic map for address6 \"" + key + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
                             return_html += status_mapdaddr6 + "<br>\n"
 
                 ### MAP SDWAN Interfaces
                 for key in device_sdwanint_data[devicedata['Device_Name']]:
-                    status_mapsdwanint = add_sdwaninterface_mapping(
-                        fmg_adom, devicedata['Device_Name'], key, 'root')
+                    status_mapsdwanint = add_sdwaninterface_mapping(fmg_adom, devicedata['Device_Name'], key, 'root')
                     if status_mapsdwanint == "OK":
-                        return_html += "Add dynamic SDWAN Map for interface \"" + key + \
-                            "\" succcessful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        return_html += "Add dynamic SDWAN Map for interface \"" + key + "\" succcessful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
                     elif status_mapsdwanint == "NoData":
-                        return_html += "Add SD-WAN interface map for \"" + key + \
-                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                        return_html += "Add SD-WAN interface map for \"" + key + "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
                     else:
-                        return_html += "Add dynamic SDWAN Map for interface \"" + key + \
-                            "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                        return_html += "Add dynamic SDWAN Map for interface \"" + key + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
                         return_html += status_mapsdwanint + "<br>\n"
 
                 ## Assign SDWAN Template
@@ -1860,21 +1841,21 @@ def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
         if workspacemode == 1:
             get_unlock = unlock_adom(fmg_adom)
             if get_unlock == "OK":
-                return_html += "Unlock ADOM \"" + fmg_adom + \
-                    "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                return_html += "Unlock ADOM \"" + fmg_adom + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
             else:
-                return_html += "Unlock ADOM \"" + fmg_adom + \
-                    "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                return_html += "Unlock ADOM \"" + fmg_adom + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
 
     ### LOGOUT OF FMG
     if fmg_sessionid is not None:
         print("### LOGOUT OF FMG")
         requestid = 1
-        jsondata = {'method': 'exec', 'params': [
-            {'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
+        jsondata = {'method': 'exec', 'params': [{'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
         res = session.post(fmgurl, json=jsondata, verify=False)
 
     return_html += "<br>\n<b> >> Complete! <br>\n"
     return_html += "<br>\n <a href=\"ztptool.html\">Return</a> <br>\n"
 
     sendupdate(return_html)
+
+
+### End copy from draft
