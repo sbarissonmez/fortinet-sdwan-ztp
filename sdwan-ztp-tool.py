@@ -1437,3 +1437,444 @@ def add_vpn_branch(adom, overlayname, interface, authpasswd, devicename, vdom):
 ##====================================================================================
 ##====================================================================================
 ##====================================================================================
+
+
+@eel.expose
+def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
+    global fmg_user
+    global fmg_passwd
+    global fmgurl
+    global fmg_adom
+    global fmg_sessionid
+    global device_meta_data
+    global device_dint_data
+    global device_sdwanint_data
+    global device_vpn_data
+    global alldevices
+
+    qi_status = False
+    fmg_adom = fmgadom
+    fmg_user = fmguser
+    fmg_passwd = fmgpasswd
+    fmgurl = "https://" + fmghost + "/jsonrpc"
+    fmg_sessionid = None
+
+    return_html = ""
+    sendupdate(return_html)
+
+    alldevices, headings, device_meta_data, device_dint_data, device_sdwanint_data, device_daddr_data, device_daddr6_data, device_vpn_data = openbook(
+        filename)
+
+    if alldevices == "workbook":
+        return_html += "Load Excel workbook failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+    elif alldevices == "worksheet":
+        return_html += "Load Excel worksheet failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+        return_html += "Device_Name not found in cell A1 of worksheet named 'Devices', 'Sheet1', or the active worksheet.<br>\n"
+    else:
+        return_html += "Load Excel workbook successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+        ##login to FMG
+
+        sendupdate(return_html)
+
+        requestid = 1
+
+        jsondata = {'method': 'exec',
+                    'params': [{'url': '/sys/login/user', 'data': {'user': fmg_user, 'passwd': fmg_passwd}}],
+                    'id': requestid}
+
+        try:
+            res = session.post(fmgurl, json=jsondata, verify=False, timeout=4)
+            try:
+                login_data = json.loads(res.text)
+                fmg_sessionid = login_data['session']
+                return_html += "FortiManager login successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+            except:
+                return_html += "FortiManager login failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+        except requests.exceptions.RequestException:
+            return_html += "FortiManager connection failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+    if fmg_sessionid is not None:
+        proceed = True
+    else:
+        proceed = False
+
+    sendupdate(return_html)
+    ### validity checks
+    if proceed == True:
+        print("### validity checks")
+        ## Does ADOM exist in FMG
+
+        jsondata = {"method": "get", "params": [{"url": "dvmdb/adom/" + fmg_adom}], "id": requestid,
+                    "session": fmg_sessionid}
+        res = session.post(fmgurl, json=jsondata, verify=False)
+        json_result = json.loads(res.text)
+        print("-- ## Does ADOM exist in FMG v1 -- ")
+        # print(json_result['result'][0]['status']['message'])
+        if json_result['result'][0]['status']['message'] != "OK":
+            return_html += "FortiManager ADOM does not exist <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+            proceed = False
+        else:
+            ## Record ADOM FGT Version
+            fmg_adom_osver = json_result['result'][0]['data']['os_ver']
+            fmg_adom_mr = json_result['result'][0]['data']['mr']
+
+        ## Get workspace mode
+
+        workspacemode = get_workspace()
+        if workspacemode == 3:
+            return_html += "Error determing workspace mode <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+            proceed = False
+        elif workspacemode == 2:
+            return_html += "FortiManager is in workflow mode (not supported) <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+            proceed = False
+        elif workspacemode == 1:
+            return_html += "FortiManager is in workspace mode <span class=\"glyphicon glyphicon-info-sign\" style=\"color:blue\"></span><br>\n"
+            # proceed = False
+        elif workspacemode == 0:
+            return_html += "FortiManager has workspace mode disabled <span class=\"glyphicon glyphicon-info-sign\" style=\"color:blue\"></span><br>\n"
+
+        ## Lock ADOM is workspace mode is enabled
+
+        if workspacemode == 1:
+            get_lock = lock_adom(fmg_adom)
+            if get_lock == "OK":
+                return_html += "Lock ADOM \"" + fmg_adom + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+            else:
+                return_html += "Lock ADOM \"" + fmg_adom + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                proceed = False
+        ## check for required fields in headings
+        required_headings = ["Device_Name", "Platform", "Device_SN", "CLI_Template", "Post_CLI_Template",
+                             "Policy_Package",
+                             "SDWAN_Template"]
+        for req_heading in required_headings:
+            if req_heading not in headings:
+                return_html += "Excel File does not have required heading \"" + req_heading + "\" <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                proceed = False
+
+    ### Check for Meta Fields and Create if they dont exist
+    if proceed == True:
+        print("### Create/Check for Meta Fields")
+
+        metafields = get_meta()
+        for field in headings:
+            if field[0:5] == "meta_":
+                try:
+                    IPDICT = next(item for item in metafields if item["name"] == field[5:])
+                except:
+                    create_meta(field[5:])
+
+        ## check for automatic Meta field for Device_Name and Device_SN
+        try:
+            IPDICT = next(item for item in metafields if item["name"] == "Device_Name")
+        except:
+            create_meta("Device_Name")
+        try:
+            IPDICT = next(item for item in metafields if item["name"] == "Device_SN")
+        except:
+            create_meta("Device_SN")
+
+    ### Create Model Devices
+    if proceed == True:
+        print("### Create Model Devices")
+        sendupdate(return_html)
+
+        for devicedata in alldevices:
+            print("   ### Create Model Device " + devicedata['Device_Name'])
+            return_html += "<br>\n <b> >> Adding Device [ " + devicedata['Device_Name'] + " ] </b><br>\n"
+            add_dev_status = track_model_task(
+                add_model_device(fmg_adom, devicedata['Device_Name'], devicedata['Device_SN'],
+                                 devicedata['Platform'], devicedata['Upgrade_Ver'], fmg_adom_osver, fmg_adom_mr))
+
+            sendupdate(return_html)
+
+            if add_dev_status == True:
+                return_html += "Adding model device (" + devicedata['Device_Name'] + "/" + devicedata[
+                    'Device_SN'] + ") successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+            else:
+                return_html += "Adding model device (" + devicedata['Device_Name'] + "/" + devicedata[
+                    'Device_SN'] + ") failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+            if add_dev_status == True:
+                ## Add device to device group
+                print("   ### Add device to device group")
+                if "Device_Group" in devicedata:
+                    if devicedata['Device_Group'] == "" or devicedata['Device_Group'] is None:
+                        return_html += "Assign Device Group {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_devgroup = add_device_to_group(devicedata['Device_Name'], fmg_adom, 'root',
+                                                              devicedata['Device_Group'])
+
+                        if status_devgroup == "OK":
+                            return_html += "Assign Device Group \"" + devicedata[
+                                'Device_Group'] + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Assign Device Group \"" + devicedata[
+                                'Device_Group'] + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                ### Add coordinates to device
+                print("   ### Add coordinates to device")
+                if "Device_Longitute" in devicedata and "Device_Latitute" in devicedata:
+                    if devicedata['Device_Longitute'] == "" or devicedata['Device_Longitute'] is None or devicedata[
+                        'Device_Latitute'] == "" or devicedata['Device_Latitute'] is None:
+                        return_html += "Assign Device Coordinates {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_addcoords = add_device_coords(devicedata['Device_Name'], fmg_adom,
+                                                             devicedata['Device_Longitute'],
+                                                             devicedata['Device_Latitute'])
+
+                        if status_addcoords == "OK":
+                            return_html += "Assign Device Coordinates successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Assign Device Coordinates failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                ## Change device password for admin user if Device_Adminpassword exists in excel sheet
+                print("   ### Change device password")
+                if "Device_Adminpassword" in devicedata:
+                    if devicedata['Device_Adminpassword'] == "" or devicedata['Device_Adminpassword'] is None:
+                        return_html += "Change Device Admin Password {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_changeadmpass = change_admpass(devicedata['Device_Name'], fmg_adom,
+                                                              devicedata['Device_Adminpassword'])
+
+                        if status_changeadmpass == "OK":
+                            return_html += "Change Device Admin Password successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Change Device Admin Password failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+
+                ### Add certificate template to device
+                print("   ### Add certificate template to device")
+                if "Cert_Template" in devicedata:
+                    if devicedata['Cert_Template'] == "" or devicedata['Cert_Template'] is None:
+                        return_html += "Assign Certificate Template {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_certtemplate = add_cert_template(devicedata['Device_Name'], fmg_adom,
+                                                                devicedata['Cert_Template'])
+
+                        if status_certtemplate == "OK":
+                            return_html += "Assign Certificate Template successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Assign Certificate Template failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                ### Add meta data to device
+                print("   ### Add meta data to device")
+                update_device(fmg_adom, devicedata['Device_Name'])
+
+                ### Assign Initial CLI Template
+                print("   ### Assign Initial CLI Template")
+                status_clitemp = ""
+                qi_status = False
+                if devicedata['CLI_Template'] == "" or devicedata['CLI_Template'] is None:
+                    return_html += "Assign CLI Template {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    qi_status = True
+                else:
+                    status_clitempgrp = assign_cli_template(fmg_adom, devicedata['CLI_Template'],
+                                                            devicedata['Device_Name'])
+                    if status_clitempgrp == "OK":
+                        return_html += "Assign CLI Template \"" + devicedata[
+                            'CLI_Template'] + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        status_clitemp = "OK"
+                    else:
+                        return_html += "Assign CLI Template \"" + devicedata[
+                            'CLI_Template'] + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                if status_clitemp == "OK":
+                    if workspacemode == 1:
+                        workspace_commit(fmg_adom)
+
+                    ##Install Device Settings
+                    qi_status = track_quickinstall(quickinstall(
+                        fmg_adom, devicedata['Device_Name'], 'root'))
+                    if qi_status:
+                        return_html += "Quick install device settings successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                    else:
+                        return_html += "Quick install device settings failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                    ##Unassign CLI Template
+                    unassign_cli_template(
+                        fmg_adom, devicedata['CLI_Template'], devicedata['Device_Name'])
+
+                    if workspacemode == 1:
+                        workspace_commit(fmg_adom)
+
+            if qi_status == True:
+
+                ## Quick Install Sucessful, assign policy package etc
+                sendupdate(return_html)
+                ##map interfaces
+
+                for key in device_dint_data[devicedata['Device_Name']]:
+                    if device_dint_data[devicedata['Device_Name']][key] == "":
+                        return_html += "Add dynamic map for interface \"" + key + \
+                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_mapdint = add_policy_interface_member(fmg_adom, key,
+                                                                     device_dint_data[devicedata['Device_Name']][key],
+                                                                     devicedata['Device_Name'])
+
+                        if status_mapdint == "OK":
+                            return_html += "Add dynamic map for interface \"" + key + \
+                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Add dynamic map for interface \"" + key + \
+                                "\" failed ><span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += status_mapdint + "<br>\n"
+
+                ### MAP DYNAMIC ADDRESS OJBECTS
+                ## ipv4
+                for key in device_daddr_data[devicedata['Device_Name']]:
+                    if device_daddr_data[devicedata['Device_Name']][key] == "":
+                        return_html += "Add dynamic map for address \"" + key + \
+                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_mapdaddr = add_daddr(fmg_adom, key, device_daddr_data[devicedata['Device_Name']][key],
+                                                    devicedata['Device_Name'], 'root')
+                        if status_mapdaddr == "OK":
+                            return_html += "Add dynamic map for address \"" + key + \
+                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Add dynamic map for address \"" + key + \
+                                "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += status_mapdaddr + "<br>\n"
+
+                ### Add Branch to Central VPN Manager (Darryl)
+
+                # e.g. key = vpn_OL_INET, vpn_OL_MPLS, ishub
+                for key in device_vpn_data[devicedata['Device_Name']]:
+                    if device_vpn_data[devicedata['Device_Name']][key] == "":
+                        return_html += "Add vpn node for device \"" + key + \
+                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        # key = the overlay name
+                        add_vpn_overlay(fmg_adom, key, "")
+
+                        print("     Is this device a vpn hub: " +
+                              devicedata['vpn_IsHub'] + " / Overlayname: " + key)
+                        if devicedata['vpn_IsHub'] in ["true", "yes", "hub", "1"]:
+                            print('    vpn_Subnet_' + key + "=" +
+                                  devicedata['vpn_Subnet_' + key])
+                            status_mapvpnnode = add_vpn_hub(fmg_adom, key,
+                                                            device_vpn_data[devicedata['Device_Name']][key],
+                                                            "", devicedata['Device_Name'], fmg_adom,
+                                                            devicedata['vpn_Subnet_' + key])
+                        else:
+                            status_mapvpnnode = add_vpn_branch(fmg_adom, key,
+                                                               device_vpn_data[devicedata['Device_Name']][key],
+                                                               "", devicedata['Device_Name'], fmg_adom)
+
+                        if status_mapvpnnode == "OK":
+                            return_html += "Add vpnnode map for device \"" + key + \
+                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Add vpnnode map for device \"" + key + \
+                                "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += status_mapdaddr + "<br>\n"
+
+                ## ipv6
+                for key in device_daddr6_data[devicedata['Device_Name']]:
+                    if device_daddr6_data[devicedata['Device_Name']][key] == "":
+                        return_html += "Add dynamic map for address6 \"" + key + \
+                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        status_mapdaddr6 = add_daddr6(fmg_adom, key, device_daddr6_data[devicedata['Device_Name']][key],
+                                                      devicedata['Device_Name'], 'root')
+                        if status_mapdaddr6 == "OK":
+                            return_html += "Add dynamic map for address6 \"" + key + \
+                                "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                        else:
+                            return_html += "Add dynamic map for address6 \"" + key + \
+                                "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                            return_html += status_mapdaddr6 + "<br>\n"
+
+                ### MAP SDWAN Interfaces
+                for key in device_sdwanint_data[devicedata['Device_Name']]:
+                    status_mapsdwanint = add_sdwaninterface_mapping(
+                        fmg_adom, devicedata['Device_Name'], key, 'root')
+                    if status_mapsdwanint == "OK":
+                        return_html += "Add dynamic SDWAN Map for interface \"" + key + \
+                            "\" succcessful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                    elif status_mapsdwanint == "NoData":
+                        return_html += "Add SD-WAN interface map for \"" + key + \
+                            "\" {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                    else:
+                        return_html += "Add dynamic SDWAN Map for interface \"" + key + \
+                            "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                        return_html += status_mapsdwanint + "<br>\n"
+
+                ## Assign SDWAN Template
+                if devicedata['SDWAN_Template'] == "" or devicedata['SDWAN_Template'] is None:
+                    return_html += "Assign SDWAN template \"{not defined}\" <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                else:
+                    status_assignsdwantemplate = assign_sdwan_template(fmg_adom, devicedata['SDWAN_Template'],
+                                                                       devicedata['Device_Name'], 'root')
+                    if status_assignsdwantemplate == "OK":
+                        return_html += "Assign SDWAN template \"" + devicedata[
+                            'SDWAN_Template'] + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                    else:
+                        return_html += "Assign SDWAN template \"" + devicedata[
+                            'SDWAN_Template'] + "\" failed ><span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                ## Add install Target
+                status_add_inst_trgt = add_install_target(devicedata['Device_Name'], fmg_adom, "root",
+                                                          devicedata['Policy_Package'])
+                if status_add_inst_trgt == "OK":
+                    return_html += "Assign policy package \"" + devicedata[
+                        'Policy_Package'] + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                else:
+                    return_html += "Assign policy package \"" + devicedata[
+                        'Policy_Package'] + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                ## Assign Post CLI Template
+                if devicedata['Post_CLI_Template'] == "" or devicedata['Post_CLI_Template'] is None:
+                    return_html += "Assign Post CLI Template {not defined} <span class=\"glyphicon glyphicon-info-sign\" style=\"color:orange\"></span><br>\n"
+                else:
+                    status_clitempgrp = assign_cli_template(fmg_adom, devicedata['Post_CLI_Template'],
+                                                            devicedata['Device_Name'])
+                    if status_clitempgrp == "OK":
+                        return_html += "Assign Post CLI Template \"" + devicedata[
+                            'Post_CLI_Template'] + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                    else:
+                        return_html += "Assign Post CLI Template \"" + devicedata[
+                            'Post_CLI_Template'] + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                if status_add_inst_trgt == "OK":
+                    ## install package
+
+                    if workspacemode == 1:
+                        workspace_commit(fmg_adom)
+
+                    pkg_status = track_policyinstall(
+                        install_pkg(devicedata['Policy_Package'], fmg_adom, devicedata['Device_Name'], 'root'))
+                    if pkg_status == True:
+                        return_html += "Install policy package \"" + devicedata[
+                            'Policy_Package'] + "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                    else:
+                        return_html += "Install policy package \"" + devicedata[
+                            'Policy_Package'] + "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+                    if pkg_status == True:
+                        pass
+
+            sendupdate(return_html)
+
+        if workspacemode == 1:
+            get_unlock = unlock_adom(fmg_adom)
+            if get_unlock == "OK":
+                return_html += "Unlock ADOM \"" + fmg_adom + \
+                    "\" successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+            else:
+                return_html += "Unlock ADOM \"" + fmg_adom + \
+                    "\" failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+    ### LOGOUT OF FMG
+    if fmg_sessionid is not None:
+        print("### LOGOUT OF FMG")
+        requestid = 1
+        jsondata = {'method': 'exec', 'params': [
+            {'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
+        res = session.post(fmgurl, json=jsondata, verify=False)
+
+    return_html += "<br>\n<b> >> Complete! <br>\n"
+    return_html += "<br>\n <a href=\"ztptool.html\">Return</a> <br>\n"
+
+    sendupdate(return_html)
