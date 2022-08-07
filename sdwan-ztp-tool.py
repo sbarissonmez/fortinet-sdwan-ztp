@@ -1859,3 +1859,105 @@ def btn_checkxlsx(filename, fmghost, fmguser, fmgpasswd, fmgadom):
 
 
 ### End copy from draft
+
+@eel.expose
+def btn_checkadom(filename, fmghost, fmguser, fmgpasswd, fmgadom, fmgadomdesc):
+    global fmg_user
+    global fmg_passwd
+    global fmgurl
+    global fmg_adom
+    global fmg_adomdesc
+    global fmg_sessionid
+
+    fmg_adom = fmgadom
+    fmg_user = fmguser
+    fmg_passwd = fmgpasswd
+    fmgurl = "https://" + fmghost + "/jsonrpc"
+    fmg_sessionid = None
+
+    return_html = ""
+    sendupdate(return_html)
+    new_json = ""
+    with open(filename) as json_data_file:
+        vars = {"$(adom_name)": fmgadom, "$(adom_desc)": fmgadomdesc}
+
+        for line in json_data_file:
+            m = re.search('\$\((.+)\)', line)
+            if m:
+                print("Old: " + line.rstrip())
+                for key in vars.keys():
+                    line = line.replace(key, vars[key])
+
+                print("New: " + line.rstrip())
+
+            new_json += line
+
+    try:
+        adom_json = json.loads(new_json)
+        return_html += "Load JSON file successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+    except:
+        return_html += "Load Excel workbook failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+    sendupdate(return_html)
+
+    if adom_json:
+        ##login to FMG
+
+        requestid = 1
+
+        jsondata = {'method': 'exec',
+                    'params': [{'url': '/sys/login/user', 'data': {'user': fmg_user, 'passwd': fmg_passwd}}],
+                    'id': requestid}
+
+        try:
+            res = session.post(fmgurl, json=jsondata, verify=False, timeout=4)
+            try:
+                login_data = json.loads(res.text)
+                fmg_sessionid = login_data['session']
+                return_html += "FortiManager login successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+            except:
+                return_html += "FortiManager login failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+        except requests.exceptions.RequestException:
+            return_html += "FortiManager connection failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+    sendupdate(return_html)
+
+    if fmg_sessionid is not None:
+        for item in adom_json["settings"]:
+            for dataset in item["data"]:
+
+                jsondata = {
+                    "method": item["method"],
+                    "params": [
+                        {
+                            "url": item["url"],
+                            "data": dataset
+
+                        }
+                    ],
+                    "id": requestid,
+                    "session": fmg_sessionid
+                }
+                print("Request:")
+                print(json.dumps(jsondata, indent=4, sort_keys=True))
+                res = session.post(fmgurl, json=jsondata, verify=False)
+                response = json.loads(res.text)
+                print("Response:")
+                print(json.dumps(response, indent=4, sort_keys=True))
+                response_url = response['result'][0]['url']
+                try:
+                    response_name = response['result'][0]['data']['name']
+                except:
+                    try:
+                        response_name = jsondata['params'][0]['data']['name']
+                    except:
+                        response_name = ""
+                if response['result'][0]['status']['message'] == "OK":
+                    return_html += response_url + response_name + " <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br>\n"
+                else:
+                    return_html += response_url + response_name + " <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+                    return_html += " >> " + response['result'][0]['status']['message'] + "<br>\n"
+
+                sendupdate(return_html)
+
+    ### LOGOUT OF FMG
