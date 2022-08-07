@@ -1,4 +1,4 @@
-Fortinet Secure SD-WAN Zero Touch Provisioning (ZTP) Tool
+## Fortinet Secure SD-WAN Zero Touch Provisioning (ZTP) Tool
  
 ZTP Tool is a small GUI application to assist with setting up Fortinet FortiManager for Zero Touch Provisioning (ZTP) of SD-WAN deployments. ZTP Tool has two main functions:
 
