@@ -1961,3 +1961,409 @@ def btn_checkadom(filename, fmghost, fmguser, fmgpasswd, fmgadom, fmgadomdesc):
                 sendupdate(return_html)
 
     ### LOGOUT OF FMG
+    if fmg_sessionid is not None:
+        requestid = 1
+        jsondata = {'method': 'exec', 'params': [{'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
+        res = session.post(fmgurl, json=jsondata, verify=False)
+
+    return_html += "<br>\n<b> >> Complete! <br>\n"
+    return_html += "<br>\n <a href=\"ztptool.html\">Return</a> <br><br><br><br>&nbsp;\n"
+
+    sendupdate(return_html)
+
+
+@eel.expose
+def btn_checkexportadom(fmghost, fmguser, fmgpasswd, fmgadom):
+    global fmg_user
+    global fmg_passwd
+    global fmgurl
+    global fmg_adom
+    global fmg_sessionid
+    global json_export
+    global requestid
+
+    fmg_adom = fmgadom
+    fmg_user = fmguser
+    fmg_passwd = fmgpasswd
+    fmgurl = "https://" + fmghost + "/jsonrpc"
+    fmg_sessionid = None
+    proceed = True
+    return_html = ""
+    sendupdate(return_html)
+    requestid = 1
+
+    ##login to FMG
+
+    requestid = 1
+
+    jsondata = {'method': 'exec',
+                'params': [{'url': '/sys/login/user', 'data': {'user': fmg_user, 'passwd': fmg_passwd}}],
+                'id': requestid}
+
+    try:
+        res = session.post(fmgurl, json=jsondata, verify=False, timeout=4)
+        try:
+            login_data = json.loads(res.text)
+            fmg_sessionid = login_data['session']
+            return_html += "FortiManager login successful <span class=\"glyphicon glyphicon-ok\" style=\"color:green\"></span><br><br>\n"
+        except:
+            return_html += "FortiManager login failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+    except requests.exceptions.RequestException:
+        return_html += "FortiManager connection failed <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br>\n"
+
+    sendupdate(return_html)
+
+    ### validity checks
+    if fmg_sessionid:
+        ## Does ADOM exist in FMG
+
+        jsondata = {"method": "get", "params": [{"url": "dvmdb/adom/" + fmg_adom}], "id": requestid,
+                    "session": fmg_sessionid}
+        res = session.post(fmgurl, json=jsondata, verify=False)
+        json_result = json.loads(res.text)
+        print("-- ## Does ADOM exist in FMG v2 -- ")
+        print(json_result['result'][0]['status']['message'])
+        if json_result['result'][0]['status']['message'] != "OK":
+            return_html += "FortiManager ADOM does not exist <span class=\"glyphicon glyphicon-remove\" style=\"color:red\"></span><br><br/>\n"
+            proceed = False
+
+        if proceed == True:
+            json_export = export_adom(fmg_adom)
+
+            return_html += "<textarea readonly rows=\"15\" id=\"jsonexport\" class=\"form-control\" style=\"min-width: 100%\">" + \
+                json_export + "</textarea><br/>\n"
+
+            return_html += "<div form-group><button type=\"button\" onclick=\"eel.btn_saveadom()\" class=\"btn btn-secondary\">Save As</button>&nbsp;<span id=\"filepath\"></span><br/><br/></div>"
+
+    sendupdate(return_html)
+
+    ### LOGOUT OF FMG
+    if fmg_sessionid is not None:
+        requestid = 1
+        jsondata = {'method': 'exec', 'params': [
+            {'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
+        res = session.post(fmgurl, json=jsondata, verify=False)
+
+    return_html += "<br>\n <a href=\"ztptool.html\">Return</a> <br><br><br><br>&nbsp;\n"
+
+    sendupdate(return_html)
+
+
+@eel.expose
+def btn_getxlsxfile():
+    root = Tk()
+    root.withdraw()
+    root.wm_attributes('-topmost', 1)
+    filename = filedialog.askopenfilename(initialdir="/", title="Select file",
+                                          filetypes=(("XLSX Files", "*.xlsx"), ("all files", "*.*")))
+    root.update()  # to make dialog close on MacOS
+    print(filename)
+
+    return filename
+
+
+@eel.expose
+def btn_saveadom():
+    root = Tk()
+    root.withdraw()
+    root.wm_attributes('-topmost', 1)
+    filename = filedialog.asksaveasfilename(initialdir="/", defaultextension=".json", title="Select file",
+                                            filetypes=(("JSON Files", "*.json"), ("all files", "*.*")))
+    root.update()  # to make dialog close on MacOS
+
+    print(filename)
+
+    try:
+        f = open(filename, "a")
+        f.write(json_export)
+        f.close()
+        eel.saveupdate("Saved as: " + filename)
+    except:
+        eel.saveupdate("Could not save as: + " + filename)
+
+
+@eel.expose
+def btn_getjsonfile():
+    root = Tk()
+    root.withdraw()
+    root.wm_attributes('-topmost', 1)
+    filename = filedialog.askopenfilename(initialdir="/", title="Select file",
+                                          filetypes=(("JSON Files", "*.json"), ("all files", "*.*")))
+    root.update()  # to make dialog close on MacOS
+    return filename
+
+
+@eel.expose
+def savesettings(save_fmg, save_user, save_adom, save_path, save_pw):
+    settingsfiledata = '''{
+  "fmg": "%s",
+  "user": "%s",
+  "passwd": "%s",
+  "adom": "%s",
+  "path": "%s"
+}
+''' % (save_fmg, save_user, save_pw, save_adom, save_path)
+
+    try:
+        setting_file = open("settings.json", "wt")
+        setting_file.write(settingsfiledata)
+        setting_file.close()
+        return ["Settings Saved", "success"]
+    except:
+        return ["Error: Could not save settings", "danger"]
+
+
+@eel.expose
+def getsettings_adom():
+    try:
+        with open('settings.json') as json_settings:
+            settings = json.load(json_settings)
+            try:
+                default_fmg = settings['fmg']
+            except:
+                default_fmg = ""
+            try:
+                default_user = settings['user']
+            except:
+                default_user = ""
+            try:
+                default_passwd = settings['passwd']
+            except:
+                default_passwd = ""
+            try:
+                default_adom = settings['adom']
+            except:
+                default_adom = ""
+        json_settings.close()
+    except:
+        default_fmg = ""
+        default_user = ""
+        default_passwd = ""
+        default_adom = ""
+
+    return_html = '''
+            <div class="starter-template">
+      <h4>Import ADOM</h4>
+    </div>
+    <div>
+      <form autocomplete="off">
+
+        <label for="fmgip">FortiManager URL</label>
+
+
+
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="https-addon">https://</span>
+          </div>
+          <input type="text" class="form-control" id="fmgip" aria-describedby="https-addon" value="%s">
+        </div>
+
+
+        <div class="form-group">
+          <label for="fmgusername">FortiManager Username</label>
+          <input type="text" class="form-control" id="fmgusername" value="%s">
+        </div>
+        <div class="form-group">
+          <label for="fmgpassword">FortiManager Password</label>
+          <input type="password" class="form-control" id="fmgpassword">
+        </div>
+        <div class="form-group">
+          <label for="fmgadom">New FortiManager ADOM</label>
+          <input type="text" class="form-control" id="fmgadom" value="">
+        </div>
+        <div class="form-group">
+          <label for="fmgadom">New FortiManager ADOM Description</label>
+          <input type="text" class="form-control" id="fmgadomdesc" value="">
+        </div>        
+        <div form-group>
+          <button type="button" onclick="getFileADOM()" class="btn btn-secondary btn-sm">Select File</button>
+          JSON Path: <span id="filepath">/</span><br/><br/>
+        </div>
+        <div class="form-group">
+          <button type="button" onclick="processadom(document.getElementById('filepath').innerHTML)" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+
+    </div>
+          ''' % (default_fmg, default_user)
+
+    eel.pageupdate(return_html)
+
+
+@eel.expose
+def getsettings_exportadom():
+    try:
+        with open('settings.json') as json_settings:
+            settings = json.load(json_settings)
+            try:
+                default_fmg = settings['fmg']
+            except:
+                default_fmg = ""
+            try:
+                default_user = settings['user']
+            except:
+                default_user = ""
+            try:
+                default_passwd = settings['passwd']
+            except:
+                default_passwd = ""
+            try:
+                default_adom = settings['adom']
+            except:
+                default_adom = ""
+        json_settings.close()
+    except:
+        default_fmg = ""
+        default_user = ""
+        default_passwd = ""
+        default_adom = ""
+
+    return_html = '''
+            <div class="starter-template">
+      <h4>Export ADOM</h4>
+    </div>
+    <div>
+      <form autocomplete="off">
+
+        <label for="fmgip">FortiManager URL</label>
+
+
+
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="https-addon">https://</span>
+          </div>
+          <input type="text" class="form-control" id="fmgip" aria-describedby="https-addon" value="%s">
+        </div>
+
+
+        <div class="form-group">
+          <label for="fmgusername">FortiManager Username</label>
+          <input type="text" class="form-control" id="fmgusername" value="%s">
+        </div>
+        <div class="form-group">
+          <label for="fmgpassword">FortiManager Password</label>
+          <input type="password" class="form-control" id="fmgpassword" value="%s">
+        </div>
+        <div class="form-group">
+          <label for="fmgadom">FortiManager ADOM to export</label>
+          <input type="text" class="form-control" id="fmgadom" value="">
+        </div>
+
+
+        <div class="form-group">
+          <button type="button" onclick="processexportadom()" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+
+    </div>
+          ''' % (default_fmg, default_user, default_passwd)
+
+    eel.pageupdate(return_html)
+
+
+@eel.expose
+def getsettings_devices():
+    try:
+        with open('settings.json') as json_settings:
+            settings = json.load(json_settings)
+            try:
+                default_fmg = settings['fmg']
+            except:
+                default_fmg = ""
+            try:
+                default_user = settings['user']
+            except:
+                default_user = ""
+            try:
+                default_passwd = settings['passwd']
+            except:
+                default_passwd = ""
+            try:
+                default_adom = settings['adom']
+            except:
+                default_adom = ""
+            try:
+                default_path = settings['path']
+            except:
+                default_path = "/"
+        json_settings.close()
+    except:
+        default_fmg = ""
+        default_user = ""
+        default_passwd = ""
+        default_adom = ""
+
+    return_html = '''
+            <div class="starter-template">
+      <h4>Import Devices</h4>
+    </div>
+    <div>
+      <form autocomplete="off">
+
+        <label for="fmgip">FortiManager URL</label>
+
+
+
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="https-addon">https://</span>
+          </div>
+          <input type="text" class="form-control" id="fmgip" aria-describedby="https-addon" value="%s">
+        </div>
+
+
+        <div class="form-group">
+          <label for="fmgusername">FortiManager Username</label>
+          <input type="text" class="form-control" id="fmgusername" value="%s">
+        </div>
+        <div class="form-group">
+          <label for="fmgpassword">FortiManager Password</label>
+          <input type="password" class="form-control" id="fmgpassword" value="%s">
+        </div>
+        <div class="form-group">
+          <label for="fmgadom">FortiManager ADOM</label>
+          <input type="text" class="form-control" id="fmgadom" value="%s">
+        </div>
+        <div form-group>
+          <button type="button" onclick="getFolder()" class="btn btn-secondary btn-sm">Select File</button>
+          Excel Path: <span id="filepath">%s</span> <div class="float-right">
+          <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#savesettingsModal">Save Settings <span class="glyphicon glyphicon-floppy-save"></span></button></div><br/><br/>
+        </div>
+        <div class="form-group">
+          <button type="button" onclick="processxlsx(document.getElementById('filepath').innerHTML)" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+
+    </div>
+          ''' % (default_fmg, default_user, default_passwd, default_adom, default_path)
+
+    eel.pageupdate(return_html)
+
+
+session = requests.session()
+
+use_mode = ''
+try:
+    with open('browser.json') as json_browsersettings:
+        browsersettings = json.load(json_browsersettings)
+        use_mode = browsersettings['mode']
+        use_cmdline_args = browsersettings['cmdline_args']
+except:
+    pass
+
+if use_mode == "":
+    try:
+        eel.start('ztptool.html', size=(790, 850), disable_cache=True)
+    except EnvironmentError:
+        # If Chrome isn't found, fallback to Microsoft Edge on Win10 or greater
+        if sys.platform in ['win32', 'win64'] and int(platform.release()) >= 10:
+            eel.start('ztptool.html', size=(790, 850),
+                      disable_cache=True, mode='edge')
+        else:
+            raise
+
+else:
+    eel.start('ztptool.html', size=(790, 850), disable_cache=True,
+              mode=use_mode, cmdline_args=use_cmdline_args)
