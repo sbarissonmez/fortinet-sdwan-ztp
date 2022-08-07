@@ -2030,8 +2030,7 @@ def btn_checkexportadom(fmghost, fmguser, fmgpasswd, fmgadom):
         if proceed == True:
             json_export = export_adom(fmg_adom)
 
-            return_html += "<textarea readonly rows=\"15\" id=\"jsonexport\" class=\"form-control\" style=\"min-width: 100%\">" + \
-                json_export + "</textarea><br/>\n"
+            return_html += "<textarea readonly rows=\"15\" id=\"jsonexport\" class=\"form-control\" style=\"min-width: 100%\">" + json_export + "</textarea><br/>\n"
 
             return_html += "<div form-group><button type=\"button\" onclick=\"eel.btn_saveadom()\" class=\"btn btn-secondary\">Save As</button>&nbsp;<span id=\"filepath\"></span><br/><br/></div>"
 
@@ -2040,8 +2039,7 @@ def btn_checkexportadom(fmghost, fmguser, fmgpasswd, fmgadom):
     ### LOGOUT OF FMG
     if fmg_sessionid is not None:
         requestid = 1
-        jsondata = {'method': 'exec', 'params': [
-            {'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
+        jsondata = {'method': 'exec', 'params': [{'url': '/sys/logout'}], 'session': fmg_sessionid, 'id': requestid}
         res = session.post(fmgurl, json=jsondata, verify=False)
 
     return_html += "<br>\n <a href=\"ztptool.html\">Return</a> <br><br><br><br>&nbsp;\n"
@@ -2359,11 +2357,9 @@ if use_mode == "":
     except EnvironmentError:
         # If Chrome isn't found, fallback to Microsoft Edge on Win10 or greater
         if sys.platform in ['win32', 'win64'] and int(platform.release()) >= 10:
-            eel.start('ztptool.html', size=(790, 850),
-                      disable_cache=True, mode='edge')
+            eel.start('ztptool.html', size=(790, 850), disable_cache=True, mode='edge')
         else:
             raise
 
 else:
-    eel.start('ztptool.html', size=(790, 850), disable_cache=True,
-              mode=use_mode, cmdline_args=use_cmdline_args)
+    eel.start('ztptool.html', size=(790, 850), disable_cache=True, mode=use_mode, cmdline_args=use_cmdline_args)
