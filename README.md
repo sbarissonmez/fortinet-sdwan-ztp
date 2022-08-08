@@ -48,3 +48,7 @@ Per Device Setup
 8) Assign Policy Package
 9) Assign Post CLI Template/Group
 10) Install Policy Package and Device Settings
+
+## Excel File Format
+
+The Excel file must be in .xlsx (Excel 2010) format. It should contain a tab called "Devices" with header fields in row1 and device info in row2 and beyond.
