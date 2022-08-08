@@ -52,3 +52,31 @@ Per Device Setup
 ## Excel File Format
 
 The Excel file must be in .xlsx (Excel 2010) format. It should contain a tab called "Devices" with header fields in row1 and device info in row2 and beyond.
+
+> Note: ZTP Tool will continue to process rows until it detects 3 blank rows. 
+
+### Required Fields
+the following fields have specific meaning in ZTP Tool and are required in order for the excel file to load.
+
+#### Device_Name
+This field will indicate the devicename to assign in FortiManager
+
+> This field will also be copied to a meta field called "Device_Name"
+
+#### Platform
+This field will assign the Platform (i.e. FortiGate-60E). 
+
+Use the CLI command `diagnose dvm supported-platforms list` on FortiManager to get  list of supported Device Types.
+
+#### Device_SN
+This field will assign the serial number for the device.
+
+> This field will also be copied to a meta field called "Device_SN"
+
+#### Upgrade_Ver
+This field will specify the Firmware version to upgrade to when the device connects to FortiManager. 
+
+Example Value: "6.2.2-b1010" for FortiOS 6.2.2 build 1010
+
+> Leave blank to not enforce firmware upgrade.
+
