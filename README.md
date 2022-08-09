@@ -80,3 +80,46 @@ Example Value: "6.2.2-b1010" for FortiOS 6.2.2 build 1010
 
 > Leave blank to not enforce firmware upgrade.
 
+#### CLI_Template
+This will assign the CLI Template Group to the device. This CLI Template will be applied before SD-WAN Templates or Policy Packages/ADOM configuration. Any objects such as interfaces which are refereced by your SD-WAN or Policy Packets must be set in this CLI Template. You should also include any other settings required for the initail device deployment here. This template will be unassigned after initially running it.
+Note: ZTP Tool will apply a CLI Template Group or CLI Template (CLI Templates and CLI Template Groups can not have the same name in FortiManager)
+
+> Leave blank to skip assigning CLI Template
+
+#### Post_CLI_Template
+This will assign the CLI Template Group to the device. This CLI Template will be applied after SD-WAN Templates or Policy Packages/ADOM configuration. Any objects you wish to overwrite from the Policy Package can be specified here. This can be used as an alternative to per device mapping or to provide per device settings for objects which do not support that feature such as schedules. 
+
+> Leave blank to skip assigning Post CLI Template
+
+#### SDWAN_Template
+This will assign the SDWAN_Template to the Device
+
+> Leave blank to skip assigning SD-WAN Template
+
+#### Policy_Package
+This will assign the Policy Package to the Device. 
+
+### Optional Device Fields
+
+#### Device_Adminpassword
+This will set the password for the admin user on the device, this field needs to match what is on the FortiGate device when it first connects to FortiManager. Default is "" (no password)
+
+#### Device_Group
+This will set the group in FortiManager for the device. The group must already exist in FortiManager.
+
+#### Device_Longitute
+This will set the longitute value for the device which is used to show the device on a map.  
+
+#### Device_Latitute
+This will set the latitute value for the device which is used to show the device on a map.  
+
+#### Cert_Template
+Execute an existing certificate template against the device.
+
+### Dynamic Fields
+The following fields have are optional and have a prefix, a value, and in some cases a suffix. They're used to define meta fields and per device mappings.
+
+#### meta_value
+The meta_ prefix will assign a meta field to a device.
+
+> Note: Meta fields which do not exist in the FortiManager will be created automatically.
