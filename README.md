@@ -123,3 +123,27 @@ The following fields have are optional and have a prefix, a value, and in some c
 The meta_ prefix will assign a meta field to a device.
 
 > Note: Meta fields which do not exist in the FortiManager will be created automatically.
+
+Example Excel Sheet
+
+Device_Name | ... | meta_timezone
+----------- | --- | -------------
+FGT-Branch1 | ... | 71
+
+
+This configuration will set the metafield timezone to the value 71 for device FGT-Branch1.
+
+Meta fields can be used in CLI Templates as per https://docs.fortinet.com/document/fortimanager/6.2.0/new-features/623532/zero-touch-provisioning-cli-template-with-variables
+
+#### dint_value
+the dint_ prefix will create a per device mapping to an interface. 
+
+Example Excel Sheet
+
+Device_Name | ... | dint_LAN
+----------- | --- | -------------
+FGT-Branch1 | ... | port1
+
+This configuration will create a per device object for the dynamic interface "LAN" with the value port1 for device FGT-Branch1.
+
+Multiple interfaces can be provided in a comma seperated list. 
