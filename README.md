@@ -147,3 +147,22 @@ FGT-Branch1 | ... | port1
 This configuration will create a per device object for the dynamic interface "LAN" with the value port1 for device FGT-Branch1.
 
 Multiple interfaces can be provided in a comma seperated list. 
+
+#### daddr_value
+The daddr_ prefix will create a per device mapping to an IPv4 address object. 
+
+Supports following format 
+
+Subnet: 192.168.0.0/24
+
+Subnet: 192.168.0.0 255.255.255.0
+
+Range: 192.168.0.5 - 192.168.0.10
+
+Example Excel Sheet
+
+Device_Name | ... | daddr_Local_LAN | daddr_BranchPhones
+----------- | --- | ------------- | --
+FGT-Branch1 | ... | 192.168.1.0/24 | 192.168.1.50 - 192.168.1.65
+
+This configuration will create a per device object for the dynamic address "Local_LAN" with the type subnet and value of 192.168.1.0/24 and "BranchPhones" with the type range and value of 192.168.1.50 - 192.168.1.65 for device FGT-Branch1
