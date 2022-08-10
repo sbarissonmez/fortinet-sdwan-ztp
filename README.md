@@ -184,3 +184,32 @@ FGT-Branch1 | ... | 2000::/24 | 2000::1 - 2000::4
 
 This configuration will create a per device object for the dynamic address "Local_LAN" with the type subnet and value of 2000::/24 and "BranchPhones" with the type range and value of 2000::1 - 2000::4 for device FGT-Branch1
 
+#### sdwanint_value|suffix
+The sdwanint_ prefix will create a per device mapping to an SD-WAN interface object. 
+
+The suffix will define what field with in the sdwan interface to set. Any field not specified will be copied from the base interface.
+
+Device_Name | ... | sdwanint_MPLS\|interface | sdwanint_MPLS\|gateway
+----------- | --- | ------------- | --
+FGT-Branch1 | ... | wan1 | 172.30.1.1
+
+This configuration will create a per device object for the SD-WAN Interface "MPLS" with the interface set to "wan1" and the gateway set to "172.30.1.1" on deivice FGT-Branch1. All other settings will be copied from the default "MPLS" interface.
+
+## Settings
+The settings.json file in the root directory contains variables for setting the default FortiManager IP address and Username to pre populate these fields when launcing ZTP Tool. You can manually edit this file.
+
+Variable | Setting 
+-------- | ------- 
+fmg | IP Address or Hostname of FortiManager
+user | FortiManager username
+passwd | FortiManager password (do not use in production enviroments)
+adom | FortiManager ADOM
+path | Path to Excel file
+
+You can also use the save settings option on the Import Devices page to save the current settings to the file.
+
+Example
+`{
+  "fmg": "fmg.example.com",
+  "user": "apiadmin"
+}`
