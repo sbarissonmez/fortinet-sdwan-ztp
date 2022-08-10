@@ -213,3 +213,37 @@ Example
   "fmg": "fmg.example.com",
   "user": "apiadmin"
 }`
+
+## Export ADOM
+The Export ADOM function will export settings from an existing FortiManager ADOM so that it can be used as a template to create new ADOMs on the same or other FortiManagers.
+
+> Note: in FortiManager 6.2.1 (CLI/API) and 6.2.2+ (CLI/API/GUI) you can clone complete ADOMs with in a FortiManager.
+
+The following settings will be exported using this function
+
+* CLI Templates
+* CLI Template Groups
+* SD-WAN Interfaces
+* SD-WAN Servers
+* SD-WAN Templates
+  * SD-WAN Members
+  * SD-WAN Health Checks
+  * SD-WAN Rules
+* Address Objects
+* Address Object Groups
+* Dynamic Interfaces
+* Applications Lists
+* Application Groups
+* Services
+* Service Groups
+* Recurring Schedules
+* Policy Packages
+  * IPv4 Policies
+
+## Import ADOM
+The Import ADOM function will create a new import based on of a json file created by the Export ADOM function. 
+
+## MacOS and Linux Support
+Builds are no longer provided for MacOS due to issues with PyInstaller and permissions in MacOS. 
+
+To run on MacOS and Linux please run directly in python form source. 
